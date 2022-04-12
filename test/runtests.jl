@@ -12,7 +12,7 @@ function test_emst_with_uniform(d,n;check_verification=false)
     x = rand(d,n)
     # x = rand(2,2000)
 
-    x_emst    = EMST.compute_emst(x)
+    (x_emst, _)    = EMST.compute_emst(x)
     good_emst = EMST.verify_emst(x,x_emst,size(x,2))
     @test good_emst
 
@@ -31,12 +31,12 @@ end
 
 
 @testset "EMST Tests A" begin
-    for zi=1:100
-        test_emst_with_uniform(2,500)
-    end
-    for zi=1:100
-        test_emst_with_uniform(17,500)
-    end
+    #for zi=1:100
+     #   test_emst_with_uniform(2,500)
+    #end
+    #for zi=1:100
+     #   test_emst_with_uniform(17,500)
+    #end
     # and check that our verification actually works.. :)
     for zi=1:20
         test_emst_with_uniform(4,1000;check_verification=true)

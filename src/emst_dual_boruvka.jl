@@ -4,6 +4,7 @@ using Distances
 
 import Base.isequal
 import Base.hash
+import Statistics.median
 
 
 """
@@ -25,7 +26,8 @@ implements undirected edge
 struct MyE
     a::Int64
     b::Int64
-    MyE(pa::Int64,pb::Int64) = (pa<pb) ? new(pa,pb) : new(pb,pa)
+    w::Float64
+    MyE(pa::Int64,pb::Int64,w::Float64) = (pa<pb) ? new(pa,pb,w::Float64) : new(pb,pa,w::Float64)
 end
 function isequal(a::MyE,b::MyE)
     return a.a==b.a && a.b==b.b
@@ -33,10 +35,15 @@ end
 function hash(a::MyE)
     return xor( hash(a.a) , hash(a.b) )
 end
-function to_matrix(ee::Vector{MyE})
-    m::Array{Int64,2} = Array{Int64}(length(ee),2)
-    for zi=1:length(ee); m[zi,1] = ee[zi].a; m[zi,2] = ee[zi].b; end
-    return m
+function to_matrices(ee::Vector{MyE})
+    m::Array{Int64,2} = Array{Int64}(undef,length(ee),2)
+    w::Array{Float64} = Array{Float64}(undef,length(ee))
+    for zi=1:length(ee)
+         m[zi,1] = ee[zi].a
+         m[zi,2] = ee[zi].b
+         w[zi] = ee[zi].w
+    end
+    return (m, w)
 end
 
 
@@ -129,15 +136,19 @@ function kdtree_split!( node::DTBNode, nmin::Int64)
         return node
     end
 
-    mind = minimum(node.data,2)
-    maxd = maximum(node.data,2)
-    ds   = findmax( maxd-mind )
-    ds   = ds[2]
+    mind = minimum(node.data,dims=2)
+    maxd = maximum(node.data, dims=2)
+    s = maxd - mind
+    # println(s)
+    ds   = findmax(s)
+    # print("$ds")
+    ds   = ds[2][1]
     #println("$ds")
+    #println(node.data[ds,:])
     vs   = median(node.data[ds,:])
-    #println("$vs")
-    bx   = node.data[ds,:] .<= vs
-
+    # println("$vs")
+    bx   = node.data[ds,:].<= vs
+    # println(bx)
     range_a = node.subset[bx]
     range_b = node.subset[.~bx]
 
@@ -180,7 +191,7 @@ function compute_emst(data::Array{Float64,2};nmin::Int=64)
     root = kdtree(data)
     kdtree_split!(root,nmin64)
     edges = dtb(root,IntDisjointSets(size(data,2)))
-    return EMST.to_matrix( collect(edges) )
+    return EMST.to_matrices( collect(edges) )
 end
 
 
@@ -263,7 +274,7 @@ function fcn(q::DTBNode,r::DTBNode,e::IntDisjointSets , C_dcq::Dict{Int64,Float6
         #n_dQ = -Inf
         n_dQ::Float64 = q.dQ
 
-        all_d_qr = Distances.pairwise(Euclidean(),q.data,r.data)
+        all_d_qr = Distances.pairwise(Euclidean(),q.data,r.data,dims=2)
 
         # --> hashing these values does not really speed up things..
         #     and it uses tons of memory, such that fancier handling of
@@ -289,7 +300,7 @@ function fcn(q::DTBNode,r::DTBNode,e::IntDisjointSets , C_dcq::Dict{Int64,Float6
                     continue
                 end
 
-                cq = find_root(e,rr) # compoment of q
+                cq = find_root!(e,rr) # compoment of q
 
                 # check distance:
                 # dist_qr::Float64 = sqrt( sum( (q.data[:,iq]-r.data[:,ir]).^2 ) )
@@ -297,7 +308,7 @@ function fcn(q::DTBNode,r::DTBNode,e::IntDisjointSets , C_dcq::Dict{Int64,Float6
 
                 if( dist_qr < C_dcq[ cq ] )
                     C_dcq[ cq ] = dist_qr
-                    C_e[ cq ]   = MyE(qq,rr) #(qq,rr)
+                    C_e[ cq ]   = MyE(qq,rr, dist_qr) #(qq,rr)
                     # and dQ !
                     n_dQ = max(n_dQ,dist_qr)
                     #n_dQ = dist_qr

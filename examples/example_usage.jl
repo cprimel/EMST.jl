@@ -22,14 +22,16 @@ end
 
 
 x_test  = rand(2,400)
-tic(); e_test  = EMST.compute_emst(x_test;nmin=64); toc();
-EMST.verify_emst(x_test,e_test,200)
+(e_test, _) = EMST.compute_emst(x_test);
+println(e_test)
+#EMST.verify_emst(x_test,e_test,200)
 plot_emst_2d(x_test,e_test)
 
+Plots.savefig("C:\\Temp\\emst_2d.png")
 x_test  = rand(3,400)
-tic(); e_test  = EMST.compute_emst(x_test;nmin=64); toc();
-EMST.verify_emst(x_test,e_test,200)
+(e_test, _)  = EMST.compute_emst(x_test);
+#EMST.verify_emst(x_test,e_test,200)
 plot_emst_3d(x_test,e_test)
 
+Plots.savefig("C:\\Temp\\emst_3d.png")
 
-Plots.savefig("C:\\Temp\\emst_2d.png")
