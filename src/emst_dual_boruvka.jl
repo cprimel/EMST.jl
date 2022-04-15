@@ -145,7 +145,11 @@ function kdtree_split!(node::KDNode, nmin::Int64)
 
     data_a = node.data[:, bx]
     data_b = node.data[:, .~bx]
-
+    println("$(length(bx))")
+    println("s: $(node.subset)")
+    println("a: $(range_a)")
+    println("b: $(range_b)")
+    
     box_lb_a = copy(node.box_lb)
     box_ub_a = copy(node.box_ub)
     box_ub_a[ds] = vs
@@ -161,7 +165,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     #id_r = id_r |  (1)<<(63)
     #println("id $(id) -> r $(id_l) , l $(id_r)")
 
-    node_left = kdtree_split!(KDNode(id_l, data_a, range_a, box_lb_a, box_ub_a, Inf), nmin)
+    node_left = kdtree_split!(KDNode(id_l, data_a, range_a, box_lb_a, box_ub_a, Inf) ,nmin)
     node_right = kdtree_split!(KDNode(id_r, data_b, range_b, box_lb_b, box_ub_b, Inf), nmin)
 
     node.left = node_left
@@ -178,10 +182,23 @@ leafSize is the max number of elements in kd-tree node.
 function compute_emst(data::Array{Float64,2}; leafSize::Int64=64)
     root = kdtree(data)
     kdtree_split!(root, leafSize)
+    oldfromnew = Vector{Int64}()
+    getleafs(root, oldfromnew)
     edges = dtb(root, IntDisjointSets(size(data, 2)))
-    return EMST.write_edgelist(collect(edges))
+    e_out, w_out = EMST.write_edgelist(collect(edges))
+    return e_out, w_out, oldfromnew
 end
 
+
+function getleafs(root::KDNode, leafsubsets::Vector{Int64})
+    if root == root.left && root == root.right
+        append!(leafsubsets,root.subset)
+        return
+    end
+    getleafs(root.left, leafsubsets)
+    getleafs(root.right, leafsubsets)
+    return
+end
 
 """
     dtb(q::KDNode,e::IntDisjointSets)

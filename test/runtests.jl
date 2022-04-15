@@ -12,7 +12,7 @@ function test_emst_with_uniform(d,n;check_verification=false)
     x = rand(d,n)
     # x = rand(2,2000)
 
-    (x_emst, _)    = EMST.compute_emst(x)
+    (x_emst, _, _)    = EMST.compute_emst(x)
     good_emst = EMST.verify_emst(x,x_emst,size(x,2))
     @test good_emst
 
