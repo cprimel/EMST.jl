@@ -145,11 +145,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
 
     data_a = node.data[:, bx]
     data_b = node.data[:, .~bx]
-    println("$(length(bx))")
-    println("s: $(node.subset)")
-    println("a: $(range_a)")
-    println("b: $(range_b)")
-    
+
     box_lb_a = copy(node.box_lb)
     box_ub_a = copy(node.box_ub)
     box_ub_a[ds] = vs
