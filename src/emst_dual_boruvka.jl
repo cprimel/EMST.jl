@@ -132,7 +132,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     if (size(node.data, 2) <= nmin)
         return node
     end
-
+    #println(size(node.data, 2))
     mind = minimum(node.data, dims=2)
     maxd = maximum(node.data, dims=2)
     s = maxd - mind
@@ -212,13 +212,13 @@ function dtb(q::KDNode, e::IntDisjointSets)
         C_dcq = Dict{Int64,Float64}()
         C_e = Dict{Int64,Edge}()
         roots = unique(e.parents)
+
         for ri in roots
             C_dcq[ri] = Inf
         end
 
         # Compute component neighbors
         find_cn(q, q, e, C_dcq, C_e)
-
         # and now add the edges..
         for ne::Edge in values(C_e)
             union!(e, ne.a, ne.b)
@@ -265,12 +265,13 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
 
     # Check that d(Q,R) > d(Q)
     dqr = computeDQR(q.box_lb, q.box_ub, r.box_lb, r.box_ub)
-    if (dqr > q.dQ)
+    if (dqr > q.dQ) 
         return
     end
 
     # Check if R and Q in a leaf node
-    if (q.left == q && r.left == r) 
+    if (q.left == q && r.left == r)
+
         n_dQ::Float64 = q.dQ
 
         all_d_qr = Distances.pairwise(Euclidean(), q.data, r.data, dims=2)
@@ -287,8 +288,7 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
 
                 # check distance:
                 dist_qr = all_d_qr[iq, ir]
-
-                if (dist_qr < C_dcq[cq])
+                if (dist_qr <= C_dcq[cq]) # TODO: did tis work???
                     C_dcq[cq] = dist_qr
                     C_e[cq] = Edge(qq, rr, dist_qr) #(qq,rr)
                     # and dQ !
@@ -296,6 +296,7 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
                 end
             end
         end
+        println(n_dQ)
         q.dQ = n_dQ
 
         return
@@ -306,6 +307,7 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
     find_cn(q.right, r.left, e, C_dcq, C_e)
     find_cn(q.left, r.right, e, C_dcq, C_e)
     find_cn(q.right, r.right, e, C_dcq, C_e)
+
     q.dQ = max(q.left.dQ, q.right.dQ)
 end
 

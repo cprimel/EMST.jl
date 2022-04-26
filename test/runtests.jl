@@ -39,7 +39,7 @@ end
     #end
     # and check that our verification actually works.. :)
     for zi=1:2
-        test_emst_with_uniform(4,1000,1;check_verification=true)
+        test_emst_with_uniform(8,1000,1;check_verification=true)
     end
 end
 
