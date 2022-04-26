@@ -288,7 +288,7 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
 
                 # check distance:
                 dist_qr = all_d_qr[iq, ir]
-                if (dist_qr <= C_dcq[cq]) # TODO: did tis work???
+                if (dist_qr < C_dcq[cq])
                     C_dcq[cq] = dist_qr
                     C_e[cq] = Edge(qq, rr, dist_qr) #(qq,rr)
                     # and dQ !
