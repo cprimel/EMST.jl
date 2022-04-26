@@ -299,7 +299,6 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
                 end
             end
         end
-        println(n_dQ)
         q.dQ = n_dQ
 
         return
