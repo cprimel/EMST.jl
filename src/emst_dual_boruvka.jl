@@ -132,8 +132,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     if (size(node.data, 2) <= nmin)
         return node
     end
-    println("size: $(size(node.data, 2))")
-    println(node.data)
+
     mind = minimum(node.data, dims=2)
     maxd = maximum(node.data, dims=2)
     s = maxd - mind
