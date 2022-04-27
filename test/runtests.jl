@@ -7,7 +7,6 @@ function test_iris()
     iris_features = Iris.features();
     x = unique(iris_features, dims=2)
     x = Array{Float64,2}(x)
-    println(size(x))
     (x_emst, _, _) = EMST.compute_emst(x)
 
     good_emst = EMST.verify_emst(x, x_emst,size(x,2))
@@ -43,8 +42,7 @@ function test_kdtree()
     root = kdtree(x)
     kdtree_split!(root, 1)
     oldfromnew = Vector{Int64}()
-    getleafs(root, oldfromnew)
-    println(oldfromnew)
+    getleaves(root, oldfromnew)
 
 end
 

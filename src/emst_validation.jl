@@ -16,7 +16,7 @@ end
   verify_emst(x::Array{Float64,2},e::Array{Int64,2},idx_check::Vector{Int64})
 
 Checks whether the computed EMST contains the nearest neighbor edges for the
-given indeces.
+given indices.
 """
 function verify_emst(x::Array{Float64,2}, e::Array{Int64,2}, idx_check::Vector{Int})
     # create edge set
@@ -24,7 +24,6 @@ function verify_emst(x::Array{Float64,2}, e::Array{Int64,2}, idx_check::Vector{I
     for zi = 1:size(e, 1)
         push!(es, Set([e[zi, 1], e[zi, 2]]))
     end
-
     print("\nVerify: ")
     ok = true
     for zi in 1:length(idx_check)

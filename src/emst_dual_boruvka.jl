@@ -6,7 +6,7 @@ import Base.isequal
 import Base.hash
 import Statistics.median
 
-export kdtree, kdtree_split!, getleafs, check_equality
+export kdtree, kdtree_split!, getleaves, check_equality
 
 """
     Edge(a, b[, w])
@@ -133,7 +133,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     if (size(node.data, 2) <= nmin)
         return node
     end
-    println(size(node.data,2))
+    #println(size(node.data,2))
     #println(minimum(node.data, dims=2))
     mind = minimum(node.data, dims=2)
     maxd = maximum(node.data, dims=2)
@@ -142,17 +142,16 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     ds = ds[2][1]
     vs = median(node.data[ds, :])
     bx = node.data[ds, :] .<= vs
+    if all(bx)
+        bx = node.data[ds, :] .< vs
+    end
     range_a = node.subset[bx]
     range_b = node.subset[.~bx]
 
-    # In cases where leafSize=1, prevents infinite recursion
-    if (length(range_a) == length(node.subset))
-        return node
-    elseif (length(range_b) == length(node.subset))
-        return node
-    end
+
     data_a = node.data[:, bx]
     data_b = node.data[:, .~bx]
+
 
     box_lb_a = copy(node.box_lb)
     box_ub_a = copy(node.box_ub)
@@ -185,27 +184,19 @@ function compute_emst(data::Array{Float64,2}; leafSize::Int64=64)
     root = kdtree(data)
     kdtree_split!(root, leafSize)
     oldfromnew = Vector{Int64}()
-    getleafs(root, oldfromnew)
+    getleaves(root, oldfromnew)
     edges = dtb(root, IntDisjointSets(size(data, 2)))
     e_out, w_out = EMST.write_edgelist(collect(edges))
     return e_out, w_out, oldfromnew
 end
 
-function check_equality(x::Array{Float64,2}) 
-    sums = sum(x,dims=1)
-    println(sums)
-    uniqueidx(v) = unique(i -> v[i], eachindex(v))
-    
-end
-
-
-function getleafs(root::KDNode, leafsubsets::Vector{Int64})
+function getleaves(root::KDNode, leafsubsets::Vector{Int64})
     if root == root.left && root == root.right
         append!(leafsubsets,root.subset)
         return
     end
-    getleafs(root.left, leafsubsets)
-    getleafs(root.right, leafsubsets)
+    getleaves(root.left, leafsubsets)
+    getleaves(root.right, leafsubsets)
     return
 end
 
