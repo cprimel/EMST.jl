@@ -6,6 +6,7 @@ import Base.isequal
 import Base.hash
 import Statistics.median
 
+export kdtree, kdtree_split!, getleafs, check_equality
 
 """
     Edge(a, b[, w])
@@ -132,10 +133,8 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     if (size(node.data, 2) <= nmin)
         return node
     end
-    #println(size(node.data, 2))
-    if (length(node.data) < 1)
-        return node
-    end
+    println(size(node.data,2))
+    #println(minimum(node.data, dims=2))
     mind = minimum(node.data, dims=2)
     maxd = maximum(node.data, dims=2)
     s = maxd - mind
@@ -146,6 +145,12 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     range_a = node.subset[bx]
     range_b = node.subset[.~bx]
 
+    # In cases where leafSize=1, prevents infinite recursion
+    if (length(range_a) == length(node.subset))
+        return node
+    elseif (length(range_b) == length(node.subset))
+        return node
+    end
     data_a = node.data[:, bx]
     data_b = node.data[:, .~bx]
 
@@ -159,10 +164,8 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     id::Int64 = node.id
     id_depth = Int(ceil((64 - leading_zeros(id)) / 2)) + 1 # in this cell we are, i.e. we have to shift id_depth times left by two bits..
     id_l = id | (1) << (2 * id_depth)
-    #id_l = id_l |  (1)<<(63)
     id_r = id | (2) << (2 * id_depth)
-    #id_r = id_r |  (1)<<(63)
-    #println("id $(id) -> r $(id_l) , l $(id_r)")
+
 
     node_left = kdtree_split!(KDNode(id_l, data_a, range_a, box_lb_a, box_ub_a, Inf) ,nmin)
     node_right = kdtree_split!(KDNode(id_r, data_b, range_b, box_lb_b, box_ub_b, Inf), nmin)
@@ -186,6 +189,13 @@ function compute_emst(data::Array{Float64,2}; leafSize::Int64=64)
     edges = dtb(root, IntDisjointSets(size(data, 2)))
     e_out, w_out = EMST.write_edgelist(collect(edges))
     return e_out, w_out, oldfromnew
+end
+
+function check_equality(x::Array{Float64,2}) 
+    sums = sum(x,dims=1)
+    println(sums)
+    uniqueidx(v) = unique(i -> v[i], eachindex(v))
+    
 end
 
 
@@ -287,7 +297,7 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
                     continue
                 end
 
-                cq = find_root!(e, rr) # compoment of q
+                cq = find_root!(e, rr) # component of q
 
                 # check distance:
                 dist_qr = all_d_qr[iq, ir]
@@ -296,10 +306,13 @@ function find_cn(q::KDNode, r::KDNode, e::IntDisjointSets, C_dcq::Dict{Int64,Flo
                     C_e[cq] = Edge(qq, rr, dist_qr) #(qq,rr)
                     # and dQ !
                     n_dQ = max(n_dQ, dist_qr)
+                    #println(n_dQ)
+                    #n_dQ = dist_qr
+                    #println(n_dQ)
                 end
             end
         end
-        q.dQ = n_dQ
+        q.dQ = n_dQ # always Inf
 
         return
     end

@@ -1,11 +1,17 @@
-
-##
-#reload("EMST.jl")
 using EMST
-@static if VERSION < v"0.7.0-DEV.2005"
-    using Base.Test
-else
-    using Test
+using Test
+using MLDatasets
+
+function test_iris()
+    #Iris.download(; i_accept_the_terms_of_use=true);
+    iris_features = Iris.features();
+    x = unique(iris_features, dims=2)
+    x = Array{Float64,2}(x)
+    println(size(x))
+    (x_emst, _, _) = EMST.compute_emst(x)
+
+    good_emst = EMST.verify_emst(x, x_emst,size(x,2))
+    @test good_emst
 end
 
 function test_emst_with_uniform(d,n,l;check_verification=false)
@@ -27,21 +33,40 @@ function test_emst_with_uniform(d,n,l;check_verification=false)
 end
 
 
+function test_kdtree()
+    iris_features = Iris.features();
+    x = unique(iris_features, dims=2)
+    x = Array{Float64,2}(x)
 
+    #check_equality(x)
 
+    root = kdtree(x)
+    kdtree_split!(root, 1)
+    oldfromnew = Vector{Int64}()
+    getleafs(root, oldfromnew)
+    println(oldfromnew)
 
-@testset "EMST Tests A" begin
-    #for zi=1:100
-     #   test_emst_with_uniform(2,500)
+end
+
+@testset "Tests" begin
+    #@testset "Test with verification" begin
+    #    for zi=1:2
+    #        test_emst_with_uniform(8,,1;check_verification=true)
+    #    end
     #end
-    #for zi=1:100
-     #   test_emst_with_uniform(17,500)
+    #@testset "With uniform" begin
+    #    for zi=1:2
+    #        test_emst_with_uniform(8,1000,1;check_verification=false)
+    #    end
     #end
-    # and check that our verification actually works.. :)
-    for zi=1:2
-        test_emst_with_uniform(8,1000,1;check_verification=true)
+    @testset "Test kdtree" begin
+        test_kdtree()
+    end
+    @testset "With Iris" begin
+        test_iris()
     end
 end
+
 
 #using Plots
 #using Gadfly
