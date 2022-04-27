@@ -7,7 +7,7 @@ function test_iris()
     iris_features = Iris.features();
     x = unique(iris_features, dims=2)
     x = Array{Float64,2}(x)
-    (x_emst, _, _) = EMST.compute_emst(x)
+    (x_emst, _, _) = EMST.compute_emst(x;leafSize=1)
 
     good_emst = EMST.verify_emst(x, x_emst,size(x,2))
     @test good_emst
@@ -46,6 +46,24 @@ function test_kdtree()
 
 end
 
+function test_small_graph() 
+    x = Array{Float64,2}(undef, 2, 8)
+    
+    x[1,1], x[2,1] = 0., 0.
+    x[1,2], x[2,2] = 0., 1.
+    x[1,3], x[2,3] = 1.0, 2.5
+    x[1,4], x[2,4] = 0.5, 3.0
+    x[1,5], x[2,5] = 0.25, 4.
+    x[1,6], x[2,6] = 4.0, 0.
+    x[1,7], x[2,7] = 1.0, 3.0
+    x[1,8], x[2,8] = 6.0, 3.0
+
+    (x_emst, _, _) = EMST.compute_emst(x;leafSize=1)
+    println(x_emst)
+    good_emst = EMST.verify_emst(x,x_emst,size(x,2))
+    @test good_emst
+end
+
 @testset "Tests" begin
     #@testset "Test with verification" begin
     #    for zi=1:2
@@ -57,12 +75,15 @@ end
     #        test_emst_with_uniform(8,1000,1;check_verification=false)
     #    end
     #end
-    @testset "Test kdtree" begin
-        test_kdtree()
+    @testset "Test 8 pts" begin
+        test_small_graph()
     end
-    @testset "With Iris" begin
-        test_iris()
-    end
+    #@testset "Test kdtree" begin
+    #    test_kdtree()
+    #end
+    #@testset "With Iris" begin
+    #    test_iris()
+    #end
 end
 
 

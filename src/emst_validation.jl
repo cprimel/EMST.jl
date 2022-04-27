@@ -1,3 +1,7 @@
+"""
+    NOTE: Validation script is verifiably wrong on simple graphs. Needs to be reworked.
+"""
+
 
 using Random
 
