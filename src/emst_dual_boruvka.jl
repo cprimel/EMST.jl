@@ -33,11 +33,12 @@ end
 """
     write_edgelist(edges)
 
-Creates (unweighted) edge list and weight list from vector of Edge structs. 
+Creates edge list and weight list from vector of Edge structs, ordered by weight. 
 
 Note: Seperate lists needed since different types.
 """
 function write_edgelist(ee::Vector{Edge})
+    ee = sort!(ee, by = e -> e.w)
     m::Array{Int64,2} = Array{Int64}(undef, length(ee), 2)
     w::Array{Float64} = Array{Float64}(undef, length(ee))
     for zi = 1:length(ee)
