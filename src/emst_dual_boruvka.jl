@@ -133,6 +133,7 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     if (size(node.data, 2) <= nmin)
         return node
     end
+    
     # Split by median 
     mind = minimum(node.data, dims=2)
     maxd = maximum(node.data, dims=2)
@@ -143,11 +144,10 @@ function kdtree_split!(node::KDNode, nmin::Int64)
     bx = node.data[ds, :] .<= vs
     # If all points are less than or equal to median, 
     if all(bx)
-        bx = node.data[ds, :] .< vs
-        # ..., if all values in d = median, can't split so return 
-        if all(.~bx)
+        if all(y->y==vs, node.data[ds,:])
             return node
         end
+        bx = node.data[ds, :] .< vs
     end
     range_a = node.subset[bx]
     range_b = node.subset[.~bx]
