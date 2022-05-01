@@ -1,8 +1,9 @@
 module EMST
 
-export compute_emst, verify_emst
+export compute_emst
 
-include("emst_dual_boruvka.jl")
-include("emst_validation.jl")
+include("kd_tree.jl")
+include("dual_tree_boruvka.jl")
+include("emst.jl")
 
 end # module

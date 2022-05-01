@@ -1,12 +1,7 @@
-
 using DataStructures
 using Distances
 
-import Base.isequal
-import Base.hash
-import Statistics.median
-
-export kdtree, kdtree_split!, getleaves, check_equality
+export dtb
 
 """
     Edge(a, b[, w])
@@ -49,168 +44,23 @@ function write_edgelist(ee::Vector{Edge})
     return (m, w)
 end
 
-"""
-struct DTBProfiling
-    n_comparisons::Int64
-    n_break_boxdist::Int64
-    n_break_onecomp::Int64
-end
-function DTBProfiling()
-    return DTBProfiling(0,0,0)
-end
-"""
+
 
 """
-    KDNode
-
-Implements node of a KDtree.
-
-...
-# Fields
-- `id`:
-- `data`: data in 2-dimensional array (row=sample, column=feature)
-- `subset`: indices of samples contained in node
-- `box_lb`: lower bound of node
-- `box_ub`: upper bound of node
-- `dQ`: length of candidate edge
-- `left`: reference to left child node
-- `right`: reference to right child node
-...
+Wraps main dual_tree_boruvka function. 
 """
-mutable struct KDNode
-    id::Int64 # identifies the node ; root has 00..00 , then
-    # levels (right/left) are encoded as 01 or 10
-    # i.e. node root->"right"->"right"->"left" ends with:
-    # 10 01 01 00
-    #  l r  r  R
-
-    data::Array{Float64,2}
-    subset::Array{Int64}
-
-    box_lb::Array{Float64,1}
-    box_ub::Array{Float64,1}
-
-    dQ::Float64
-
-    left::KDNode
-    right::KDNode
-
-    function KDNode(id::Int64, data::Array{Float64,2}, subset::Array{Int64}, box_lb::Array{Float64,1}, box_ub::Array{Float64,1}, dQ::Float64)
-        n = new(id, data, subset, box_lb, box_ub, dQ)
-        n.left = n
-        n.right = n
-        return n
-    end
-end
-function isequal(a::KDNode, b::KDNode)
-    return a.id == b.id
-end
-function is_leaf(n::KDNode)
-    return n == n
+function dtb(q::KDNode, e::IntDisjointSets)
+    edges = dual_tree_boruvka(q, e)
+    edges, weights = write_edgelist(collect(edges))
+    return edges, weights
 end
 
 """
-    kdtree(data)
-
-Initializes root node of KD tree
-
-Note:: To build a KD tree:
-            kdt_root = kdtree( data )
-            kdtree_split!( kdt_root , 10 )
-"""
-function kdtree(xx::Array{Float64,2})
-    root = KDNode(Int64(0), xx, collect(Int64(1):Int64(size(xx, 2))), fill!(ones(size(xx, 1)), -Inf), fill!(ones(size(xx, 1)), Inf), Inf)
-    return root
-end
-
-
-"""
-    kdtree_split!(node, leafSize)
-
-Computes splits of KD tree. Stop splitting when node contains number of samples equal to leafSize.
-"""
-function kdtree_split!(node::KDNode, nmin::Int64)
-
-    if (size(node.data, 2) <= nmin)
-        return node
-    end
-    
-    # Split by median 
-    mind = minimum(node.data, dims=2)
-    maxd = maximum(node.data, dims=2)
-    s = maxd - mind
-    ds = findmax(s)
-    ds = ds[2][1]
-    vs = median(node.data[ds, :])
-    bx = node.data[ds, :] .<= vs
-    # If all points are less than or equal to median, 
-    if all(bx)
-        if all(y->y==vs, node.data[ds,:])
-            return node
-        end
-        bx = node.data[ds, :] .< vs
-    end
-    range_a = node.subset[bx]
-    range_b = node.subset[.~bx]
-
-
-    data_a = node.data[:, bx]
-    data_b = node.data[:, .~bx]
-
-
-    box_lb_a = copy(node.box_lb)
-    box_ub_a = copy(node.box_ub)
-    box_ub_a[ds] = vs
-    box_lb_b = copy(node.box_lb)
-    box_lb_b[ds] = vs
-    box_ub_b = copy(node.box_ub)
-
-    id::Int64 = node.id
-    id_depth = Int(ceil((64 - leading_zeros(id)) / 2)) + 1 # in this cell we are, i.e. we have to shift id_depth times left by two bits..
-    id_l = id | (1) << (2 * id_depth)
-    id_r = id | (2) << (2 * id_depth)
-
-
-    node_left = kdtree_split!(KDNode(id_l, data_a, range_a, box_lb_a, box_ub_a, Inf) ,nmin)
-    node_right = kdtree_split!(KDNode(id_r, data_b, range_b, box_lb_b, box_ub_b, Inf), nmin)
-
-    node.left = node_left
-    node.right = node_right
-    return node
-end
-
-"""
-    compute_emst(data[,leafSize])
-
-Computes EMST for the given data (where columns are samples).
-leafSize is the max number of elements in kd-tree node.
-"""
-function compute_emst(data::Array{Float64,2}; leafSize::Int64=64)
-    root = kdtree(data)
-    kdtree_split!(root, leafSize)
-    oldfromnew = Vector{Int64}()
-    getleaves(root, oldfromnew)
-    edges = dtb(root, IntDisjointSets(size(data, 2)))
-    e_out, w_out = EMST.write_edgelist(collect(edges))
-    return e_out, w_out, oldfromnew
-end
-
-function getleaves(root::KDNode, leafsubsets::Vector{Int64})
-    if root == root.left && root == root.right
-        append!(leafsubsets,root.subset)
-        return
-    end
-    getleaves(root.left, leafsubsets)
-    getleaves(root.right, leafsubsets)
-    return
-end
-
-"""
-    dtb(q::KDNode,e::IntDisjointSets)
+    dual_tree_boruvka(q::KDNode,e::IntDisjointSets)
 
 Implements the dual-tree Boruvka algorithm which computes the Euclidean minimum spanning tree for the given KD-tree.
 """
-function dtb(q::KDNode, e::IntDisjointSets)
+function dual_tree_boruvka(q::KDNode, e::IntDisjointSets)
     edges = Set{Edge}()
 
     while (e.ngroups > 1)
@@ -328,6 +178,8 @@ end
 
 compute min dist. between bounding boxes, i.e. between rectangular boxes Q/R with
 bounds given by q_lb/q_ub and r_lb/r_ub
+
+NOTE: midpoint split leads to deep / infinite recursions related to this function.
 """
 function computeDQR(q_lb::Array{Float64,1}, q_ub::Array{Float64,1}, r_lb::Array{Float64,1}, r_ub::Array{Float64,1})
     d::Int64 = length(q_lb)
